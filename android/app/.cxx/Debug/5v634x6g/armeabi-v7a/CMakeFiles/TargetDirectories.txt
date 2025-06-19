@@ -1,0 +1,2 @@
+C:/Flutter Projects/asthma_app_6/android/app/.cxx/Debug/5v634x6g/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Flutter Projects/asthma_app_6/android/app/.cxx/Debug/5v634x6g/armeabi-v7a/CMakeFiles/rebuild_cache.dir
