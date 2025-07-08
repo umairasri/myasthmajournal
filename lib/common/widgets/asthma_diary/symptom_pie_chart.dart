@@ -9,7 +9,12 @@ import 'package:asthma_app/utils/logger.dart';
 import 'package:intl/intl.dart';
 
 class SymptomPieChart extends StatefulWidget {
-  const SymptomPieChart({Key? key}) : super(key: key);
+  final String filter;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  const SymptomPieChart(
+      {Key? key, required this.filter, this.startDate, this.endDate})
+      : super(key: key);
 
   @override
   State<SymptomPieChart> createState() => _SymptomPieChartState();
@@ -20,7 +25,6 @@ class _SymptomPieChartState extends State<SymptomPieChart> {
   final SelectedDependentController _selectedDependentController =
       Get.find<SelectedDependentController>();
 
-  String _selectedFilter = 'Today';
   Map<String, int> _symptomCounts = {};
   List<MapEntry<String, int>> _topSymptoms = [];
 
@@ -49,9 +53,13 @@ class _SymptomPieChartState extends State<SymptomPieChart> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _loadSymptomData();
+  void didUpdateWidget(covariant SymptomPieChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.filter != widget.filter ||
+        oldWidget.startDate != widget.startDate ||
+        oldWidget.endDate != widget.endDate) {
+      _loadSymptomData();
+    }
   }
 
   Future<void> _loadSymptomData() async {
@@ -65,8 +73,7 @@ class _SymptomPieChartState extends State<SymptomPieChart> {
 
     final now = DateTime.now();
     DateTime startDate;
-
-    switch (_selectedFilter) {
+    switch (widget.filter) {
       case 'Today':
         startDate = DateTime(now.year, now.month, now.day);
         break;
@@ -77,18 +84,39 @@ class _SymptomPieChartState extends State<SymptomPieChart> {
       case 'This Month':
         startDate = DateTime(now.year, now.month, 1);
         break;
+      case 'Custom Date':
+        if (widget.startDate != null) {
+          startDate = DateTime(widget.startDate!.year, widget.startDate!.month,
+              widget.startDate!.day);
+        } else {
+          startDate = DateTime(now.year, now.month, now.day);
+        }
+        break;
       default:
         startDate = DateTime(now.year, now.month, now.day);
     }
 
-    // Count symptoms based on filter
     for (var symptom in symptoms) {
       final dateParts = symptom.date.split('-');
       if (dateParts.length == 3) {
         final symptomDate = DateTime(int.parse(dateParts[0]),
             int.parse(dateParts[1]), int.parse(dateParts[2]));
 
-        if (symptomDate.isAfter(startDate) ||
+        if (widget.filter == 'Custom Date' &&
+            widget.startDate != null &&
+            widget.endDate != null) {
+          if (symptomDate.isAfter(
+                  widget.startDate!.subtract(const Duration(days: 1))) &&
+              symptomDate
+                  .isBefore(widget.endDate!.add(const Duration(days: 1)))) {
+            for (var sym in symptom.symptom) {
+              final name = sym['name'] as String?;
+              if (name != null) {
+                _symptomCounts[name] = (_symptomCounts[name] ?? 0) + 1;
+              }
+            }
+          }
+        } else if (symptomDate.isAfter(startDate) ||
             (symptomDate.year == startDate.year &&
                 symptomDate.month == startDate.month &&
                 symptomDate.day == startDate.day)) {
@@ -102,7 +130,6 @@ class _SymptomPieChartState extends State<SymptomPieChart> {
       }
     }
 
-    // Get top 5 symptoms
     _topSymptoms = _symptomCounts.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     if (_topSymptoms.length > 5) {
@@ -120,8 +147,8 @@ class _SymptomPieChartState extends State<SymptomPieChart> {
         /// -- Chart Title with Filter
         Padding(
           padding: const EdgeInsets.only(left: 5),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Top Recorded Symptoms',
@@ -131,45 +158,18 @@ class _SymptomPieChartState extends State<SymptomPieChart> {
                     .apply(color: TColors.darkGrey)
                     .copyWith(fontSize: 16),
               ),
-              Container(
-                width: 120,
-                padding: const EdgeInsets.symmetric(horizontal: TSizes.sm),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(TSizes.cardRadiusLg),
-                  border: Border.all(
-                    color: Colors.grey.shade300,
-                    width: 1.5,
-                  ),
-                ),
-                child: DropdownButton<String>(
-                  value: _selectedFilter,
-                  underline: const SizedBox(),
-                  isExpanded: true,
-                  icon: const Icon(Icons.arrow_drop_down),
-                  items:
-                      ['Today', 'This Week', 'This Month'].map((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(
-                        value,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.black,
-                        ),
+              if (widget.filter == 'Custom Date' &&
+                  widget.startDate != null &&
+                  widget.endDate != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  '${DateFormat('MMM dd').format(widget.startDate!)} - ${DateFormat('MMM dd, yyyy').format(widget.endDate!)}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: TColors.darkGrey,
+                        fontSize: 12,
                       ),
-                    );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    if (newValue != null) {
-                      setState(() {
-                        _selectedFilter = newValue;
-                      });
-                      _loadSymptomData();
-                    }
-                  },
                 ),
-              ),
+              ],
             ],
           ),
         ),

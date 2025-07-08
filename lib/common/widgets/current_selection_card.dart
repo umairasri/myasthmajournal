@@ -196,15 +196,20 @@ class CurrentSelectionCard extends StatelessWidget {
                             color: TColors.primary,
                           ),
                           const SizedBox(width: TSizes.xs),
-                          Text(
-                            'Flixotide Evohaler: $medicationFrequency',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: TColors.dark,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                          Flexible(
+                            child: Text(
+                              'Evohaler: $medicationFrequency per day',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: TColors.dark,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                              softWrap: true,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
                           ),
                         ],
                       ),

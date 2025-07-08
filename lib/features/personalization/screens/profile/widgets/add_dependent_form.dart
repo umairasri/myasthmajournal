@@ -143,7 +143,7 @@ class AddDependentForm extends StatelessWidget {
             validator: (value) =>
                 TValidator.validateEmptyText('Flixotide Evohaler', value),
             decoration: const InputDecoration(
-              labelText: 'Flixotide Evohaler Usage',
+              labelText: 'Flixotide Evohaler Usage (per day)',
               prefixIcon: Icon(Iconsax.clock),
             ),
           ),

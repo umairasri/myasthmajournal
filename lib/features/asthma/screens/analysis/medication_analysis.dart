@@ -1,9 +1,7 @@
-import 'package:asthma_app/common/widgets/asthma_diary/medication_statistics_cards.dart';
-import 'package:asthma_app/common/widgets/asthma_diary/today_medication_usage.dart';
+import 'package:asthma_app/common/widgets/asthma_diary/unified_medication_analysis.dart';
 import 'package:flutter/material.dart';
 import 'package:asthma_app/utils/constants/colors.dart';
 import 'package:asthma_app/utils/constants/sizes.dart';
-import 'package:asthma_app/common/widgets/asthma_diary/medication_chart_filter.dart';
 
 class MedicationAnalysis extends StatelessWidget {
   const MedicationAnalysis({super.key});
@@ -16,11 +14,7 @@ class MedicationAnalysis extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: TSizes.spaceBtwSections),
-            const MedicationStatisticsCards(),
-            const SizedBox(height: TSizes.spaceBtwSections),
-            TodayMedicationUsage(showFilter: true),
-            const SizedBox(height: TSizes.spaceBtwSections + 15),
-            const MedicationChartFilter(),
+            const UnifiedMedicationAnalysis(showFilter: true),
             const SizedBox(height: TSizes.spaceBtwSections + 150),
           ],
         ),

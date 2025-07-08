@@ -160,7 +160,7 @@ class SelectDependentPopup extends StatelessWidget {
                     ),
                     const SizedBox(height: TSizes.xs),
                     Text(
-                      'Flixotide Evohaler: $evohaler times',
+                      'Evohaler: $evohaler times per day',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],

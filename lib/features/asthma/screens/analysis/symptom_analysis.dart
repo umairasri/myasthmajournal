@@ -1,4 +1,5 @@
 import 'package:asthma_app/common/widgets/asthma_diary/symptom_pie_chart.dart';
+import 'package:asthma_app/common/widgets/asthma_diary/unified_symptom_analysis.dart';
 import 'package:flutter/material.dart';
 import 'package:asthma_app/common/widgets/asthma_diary/symptom_chart_filter.dart';
 import 'package:asthma_app/common/widgets/asthma_diary/symptom_type_bar_chart.dart';
@@ -21,13 +22,7 @@ class _SymptomAnalysisState extends State<SymptomAnalysis> {
         child: Column(
           children: [
             const SizedBox(height: TSizes.spaceBtwSections),
-            const SymptomStatisticsCards(),
-            const SizedBox(height: TSizes.spaceBtwSections),
-            const SymptomChartFilter(),
-            const SizedBox(height: TSizes.spaceBtwSections + 15),
-            const SymptomTypeBarChart(),
-            const SizedBox(height: TSizes.spaceBtwSections + 15),
-            const SymptomPieChart(),
+            const UnifiedSymptomAnalysis(),
             const SizedBox(height: TSizes.spaceBtwSections + 150),
           ],
         ),

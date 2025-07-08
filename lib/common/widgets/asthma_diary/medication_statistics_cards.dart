@@ -160,7 +160,7 @@ class _MedicationStatisticsCardsState extends State<MedicationStatisticsCards> {
             // Total Medications Card
             Expanded(
               child: Container(
-                padding: const EdgeInsets.all(TSizes.sm + 4),
+                padding: const EdgeInsets.all(TSizes.md),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(TSizes.cardRadiusLg),
@@ -173,17 +173,16 @@ class _MedicationStatisticsCardsState extends State<MedicationStatisticsCards> {
                     ),
                   ],
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Total\nMedications',
+                      'Total Medications',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             color: TColors.darkGrey,
-                            fontSize: 15,
                           ),
                     ),
-                    const SizedBox(width: TSizes.xs * 2),
+                    const SizedBox(height: TSizes.sm),
                     Text(
                       _getTotalMedications().toString(),
                       style:
@@ -192,6 +191,13 @@ class _MedicationStatisticsCardsState extends State<MedicationStatisticsCards> {
                                 fontWeight: FontWeight.bold,
                                 fontSize: 45,
                               ),
+                    ),
+                    const SizedBox(height: TSizes.xs - 4),
+                    Text(
+                      '',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: TColors.darkGrey,
+                          ),
                     ),
                   ],
                 ),

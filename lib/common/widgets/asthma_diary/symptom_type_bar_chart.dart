@@ -10,7 +10,12 @@ import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SymptomTypeBarChart extends StatefulWidget {
-  const SymptomTypeBarChart({Key? key}) : super(key: key);
+  final String filter;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  const SymptomTypeBarChart(
+      {Key? key, required this.filter, this.startDate, this.endDate})
+      : super(key: key);
 
   @override
   State<SymptomTypeBarChart> createState() => _SymptomTypeBarChartState();
@@ -21,7 +26,6 @@ class _SymptomTypeBarChartState extends State<SymptomTypeBarChart> {
   final SelectedDependentController _selectedDependentController =
       Get.find<SelectedDependentController>();
 
-  String _selectedFilter = 'Today'; // Default filter
   Map<String, int> _symptomCounts = {};
   List<String> _symptomTypes = [];
 
@@ -51,10 +55,13 @@ class _SymptomTypeBarChartState extends State<SymptomTypeBarChart> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Reload data when dependent changes
-    _loadSymptomData();
+  void didUpdateWidget(covariant SymptomTypeBarChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.filter != widget.filter ||
+        oldWidget.startDate != widget.startDate ||
+        oldWidget.endDate != widget.endDate) {
+      _loadSymptomData();
+    }
   }
 
   Future<void> _loadSymptomData() async {
@@ -67,7 +74,6 @@ class _SymptomTypeBarChartState extends State<SymptomTypeBarChart> {
     final symptoms =
         _symptomController.symptoms.where((s) => s.userId == userId).toList();
 
-    // Define all possible symptom types
     final allSymptomTypes = [
       'Cough',
       'Chest Compression',
@@ -81,26 +87,30 @@ class _SymptomTypeBarChartState extends State<SymptomTypeBarChart> {
       'Headache',
     ];
 
-    // Initialize counts for all symptom types
     for (var type in allSymptomTypes) {
       _symptomCounts[type] = 0;
     }
 
     final now = DateTime.now();
     DateTime startDate;
-
-    // Set start date based on filter
-    switch (_selectedFilter) {
+    switch (widget.filter) {
       case 'Today':
         startDate = DateTime(now.year, now.month, now.day);
         break;
       case 'This Week':
-        // Find the start of the current week (Monday)
         startDate = now.subtract(Duration(days: now.weekday - 1));
         startDate = DateTime(startDate.year, startDate.month, startDate.day);
         break;
       case 'This Month':
         startDate = DateTime(now.year, now.month, 1);
+        break;
+      case 'Custom Date':
+        if (widget.startDate != null) {
+          startDate = DateTime(widget.startDate!.year, widget.startDate!.month,
+              widget.startDate!.day);
+        } else {
+          startDate = DateTime(now.year, now.month, now.day);
+        }
         break;
       default:
         startDate = DateTime(now.year, now.month, now.day);
@@ -108,19 +118,32 @@ class _SymptomTypeBarChartState extends State<SymptomTypeBarChart> {
 
     TLogger.debug('Loading symptom data for $userId from $startDate to $now');
 
-    // Count symptoms based on filter
     for (var symptom in symptoms) {
-      // Parse the date string to DateTime
       final dateParts = symptom.date.split('-');
       if (dateParts.length == 3) {
         final symptomDate = DateTime(int.parse(dateParts[0]),
             int.parse(dateParts[1]), int.parse(dateParts[2]));
 
-        if (symptomDate.isAfter(startDate) ||
+        if (widget.filter == 'Custom Date' &&
+            widget.startDate != null &&
+            widget.endDate != null) {
+          if (symptomDate.isAfter(
+                  widget.startDate!.subtract(const Duration(days: 1))) &&
+              symptomDate
+                  .isBefore(widget.endDate!.add(const Duration(days: 1)))) {
+            for (var type in allSymptomTypes) {
+              for (var sym in symptom.symptom) {
+                if (sym['name']?.toLowerCase().contains(type.toLowerCase()) ??
+                    false) {
+                  _symptomCounts[type] = (_symptomCounts[type] ?? 0) + 1;
+                }
+              }
+            }
+          }
+        } else if (symptomDate.isAfter(startDate) ||
             (symptomDate.year == startDate.year &&
                 symptomDate.month == startDate.month &&
                 symptomDate.day == startDate.day)) {
-          // Count each symptom type
           for (var type in allSymptomTypes) {
             for (var sym in symptom.symptom) {
               if (sym['name']?.toLowerCase().contains(type.toLowerCase()) ??
@@ -133,11 +156,9 @@ class _SymptomTypeBarChartState extends State<SymptomTypeBarChart> {
       }
     }
 
-    // Get non-zero symptom types for display
     _symptomTypes =
         allSymptomTypes.where((type) => _symptomCounts[type]! > 0).toList();
 
-    // If no symptoms found, add a placeholder
     if (_symptomTypes.isEmpty) {
       _symptomTypes = ['No Symptoms'];
       _symptomCounts['No Symptoms'] = 0;
@@ -155,8 +176,8 @@ class _SymptomTypeBarChartState extends State<SymptomTypeBarChart> {
         /// -- Chart Title with Filter
         Padding(
           padding: const EdgeInsets.only(left: 5),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Symptom Types Trend',
@@ -166,45 +187,18 @@ class _SymptomTypeBarChartState extends State<SymptomTypeBarChart> {
                     .apply(color: TColors.darkGrey)
                     .copyWith(fontSize: 16),
               ),
-              Container(
-                width: 120,
-                padding: const EdgeInsets.symmetric(horizontal: TSizes.sm),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(TSizes.cardRadiusLg),
-                  border: Border.all(
-                    color: Colors.grey.shade300,
-                    width: 1.5,
-                  ),
-                ),
-                child: DropdownButton<String>(
-                  value: _selectedFilter,
-                  underline: const SizedBox(),
-                  isExpanded: true,
-                  icon: const Icon(Icons.arrow_drop_down),
-                  items:
-                      ['Today', 'This Week', 'This Month'].map((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(
-                        value,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.black,
-                        ),
+              if (widget.filter == 'Custom Date' &&
+                  widget.startDate != null &&
+                  widget.endDate != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  '${DateFormat('MMM dd').format(widget.startDate!)} - ${DateFormat('MMM dd, yyyy').format(widget.endDate!)}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: TColors.darkGrey,
+                        fontSize: 12,
                       ),
-                    );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    if (newValue != null) {
-                      setState(() {
-                        _selectedFilter = newValue;
-                      });
-                      _loadSymptomData();
-                    }
-                  },
                 ),
-              ),
+              ],
             ],
           ),
         ),

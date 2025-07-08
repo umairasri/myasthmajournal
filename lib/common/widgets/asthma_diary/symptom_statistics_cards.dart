@@ -7,7 +7,11 @@ import 'package:asthma_app/features/personalization/controllers/selected_depende
 import 'package:intl/intl.dart';
 
 class SymptomStatisticsCards extends StatefulWidget {
-  const SymptomStatisticsCards({super.key});
+  final String filter;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  const SymptomStatisticsCards(
+      {super.key, required this.filter, this.startDate, this.endDate});
 
   @override
   State<SymptomStatisticsCards> createState() => _SymptomStatisticsCardsState();
@@ -16,7 +20,6 @@ class SymptomStatisticsCards extends StatefulWidget {
 class _SymptomStatisticsCardsState extends State<SymptomStatisticsCards> {
   final SymptomController _symptomController = Get.find();
   final SelectedDependentController _selectedDependentController = Get.find();
-  String _selectedFilter = 'Today';
 
   int _getTotalSymptoms() {
     final now = DateTime.now();
@@ -27,7 +30,7 @@ class _SymptomStatisticsCardsState extends State<SymptomStatisticsCards> {
         .toList();
 
     DateTime startDate;
-    switch (_selectedFilter) {
+    switch (widget.filter) {
       case 'Today':
         startDate = DateTime(now.year, now.month, now.day);
         break;
@@ -38,12 +41,27 @@ class _SymptomStatisticsCardsState extends State<SymptomStatisticsCards> {
       case 'This Month':
         startDate = DateTime(now.year, now.month, 1);
         break;
+      case 'Custom Date':
+        if (widget.startDate != null) {
+          startDate = DateTime(widget.startDate!.year, widget.startDate!.month,
+              widget.startDate!.day);
+        } else {
+          startDate = DateTime(now.year, now.month, now.day);
+        }
+        break;
       default:
         startDate = DateTime(now.year, now.month, now.day);
     }
 
     return symptoms.where((symptom) {
       final symptomDate = DateFormat('yyyy-MM-dd').parse(symptom.date);
+      if (widget.filter == 'Custom Date' &&
+          widget.startDate != null &&
+          widget.endDate != null) {
+        return symptomDate
+                .isAfter(widget.startDate!.subtract(const Duration(days: 1))) &&
+            symptomDate.isBefore(widget.endDate!.add(const Duration(days: 1)));
+      }
       return symptomDate.isAfter(startDate) ||
           (symptomDate.year == startDate.year &&
               symptomDate.month == startDate.month &&
@@ -61,7 +79,7 @@ class _SymptomStatisticsCardsState extends State<SymptomStatisticsCards> {
 
     DateTime startDate;
     int totalDays;
-    switch (_selectedFilter) {
+    switch (widget.filter) {
       case 'Today':
         startDate = DateTime(now.year, now.month, now.day);
         totalDays = 1;
@@ -75,6 +93,16 @@ class _SymptomStatisticsCardsState extends State<SymptomStatisticsCards> {
         startDate = DateTime(now.year, now.month, 1);
         totalDays = DateTime(now.year, now.month + 1, 0).day;
         break;
+      case 'Custom Date':
+        if (widget.startDate != null && widget.endDate != null) {
+          startDate = DateTime(widget.startDate!.year, widget.startDate!.month,
+              widget.startDate!.day);
+          totalDays = widget.endDate!.difference(widget.startDate!).inDays + 1;
+        } else {
+          startDate = DateTime(now.year, now.month, now.day);
+          totalDays = 1;
+        }
+        break;
       default:
         startDate = DateTime(now.year, now.month, now.day);
         totalDays = 1;
@@ -83,6 +111,14 @@ class _SymptomStatisticsCardsState extends State<SymptomStatisticsCards> {
     final daysWithSymptoms = symptoms
         .where((symptom) {
           final symptomDate = DateFormat('yyyy-MM-dd').parse(symptom.date);
+          if (widget.filter == 'Custom Date' &&
+              widget.startDate != null &&
+              widget.endDate != null) {
+            return symptomDate.isAfter(
+                    widget.startDate!.subtract(const Duration(days: 1))) &&
+                symptomDate
+                    .isBefore(widget.endDate!.add(const Duration(days: 1)));
+          }
           return symptomDate.isAfter(startDate) ||
               (symptomDate.year == startDate.year &&
                   symptomDate.month == startDate.month &&
@@ -100,49 +136,50 @@ class _SymptomStatisticsCardsState extends State<SymptomStatisticsCards> {
     return Column(
       children: [
         // Filter Dropdown
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Container(
-              width: 120, // Fixed width for the dropdown
-              padding: const EdgeInsets.symmetric(horizontal: TSizes.sm),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(TSizes.cardRadiusLg),
-                border: Border.all(
-                  color: Colors.grey.shade300,
-                  width: 1.5,
-                ),
-              ),
-              child: DropdownButton<String>(
-                value: _selectedFilter,
-                underline: const SizedBox(),
-                isExpanded: true,
-                icon: const Icon(Icons.arrow_drop_down),
-                items: ['Today', 'This Week', 'This Month'].map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(
-                      value,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.black,
-                      ),
-                    ),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  if (newValue != null) {
-                    setState(() {
-                      _selectedFilter = newValue;
-                    });
-                  }
-                },
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: TSizes.spaceBtwSections),
+        // Row(
+        //   mainAxisAlignment: MainAxisAlignment.end,
+        //   children: [
+        //     Container(
+        //       width: 120, // Fixed width for the dropdown
+        //       padding: const EdgeInsets.symmetric(horizontal: TSizes.sm),
+        //       decoration: BoxDecoration(
+        //         color: Colors.white,
+        //         borderRadius: BorderRadius.circular(TSizes.cardRadiusLg),
+        //         border: Border.all(
+        //           color: Colors.grey.shade300,
+        //           width: 1.5,
+        //         ),
+        //       ),
+        //       child: DropdownButton<String>(
+        //         value: widget.filter,
+        //         underline: const SizedBox(),
+        //         isExpanded: true,
+        //         icon: const Icon(Icons.arrow_drop_down),
+        //         items: ['Today', 'This Week', 'This Month', 'Custom Date']
+        //             .map((String value) {
+        //           return DropdownMenuItem<String>(
+        //             value: value,
+        //             child: Text(
+        //               value,
+        //               style: const TextStyle(
+        //                 fontSize: 13,
+        //                 color: Colors.black,
+        //               ),
+        //             ),
+        //           );
+        //         }).toList(),
+        //         onChanged: (String? newValue) {
+        //           if (newValue != null) {
+        //             setState(() {
+        //               // Handle filter change
+        //             });
+        //           }
+        //         },
+        //       ),
+        //     ),
+        //   ],
+        // ),
+        // const SizedBox(height: TSizes.spaceBtwSections),
 
         // Statistics Cards
         Row(
@@ -150,42 +187,63 @@ class _SymptomStatisticsCardsState extends State<SymptomStatisticsCards> {
             // Total Symptoms Card
             Expanded(
               child: Container(
-                padding: const EdgeInsets.all(TSizes.sm + 4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(TSizes.cardRadiusLg),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 10,
-                      spreadRadius: 5,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Total\n Symptoms',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: TColors.darkGrey,
-                            fontSize: 15,
+                  padding: const EdgeInsets.all(TSizes.sm + 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(TSizes.cardRadiusLg),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 10,
+                        spreadRadius: 5,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Total\n Symptoms',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  color: TColors.darkGrey,
+                                  fontSize: 15,
+                                ),
                           ),
-                    ),
-                    const SizedBox(width: TSizes.xs * 2),
-                    Text(
-                      _getTotalSymptoms().toString(),
-                      style:
-                          Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                color: TColors.primary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 45,
-                              ),
-                    ),
-                  ],
-                ),
-              ),
+                          const SizedBox(width: TSizes.xs * 2),
+                          Text(
+                            _getTotalSymptoms().toString(),
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium
+                                ?.copyWith(
+                                  color: TColors.primary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 45,
+                                ),
+                          ),
+                        ],
+                      ),
+                      if (widget.filter == 'Custom Date' &&
+                          widget.startDate != null &&
+                          widget.endDate != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          '${DateFormat('MMM dd').format(widget.startDate!)} - ${DateFormat('MMM dd, yyyy').format(widget.endDate!)}',
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: TColors.darkGrey,
+                                    fontSize: 12,
+                                  ),
+                        ),
+                      ],
+                    ],
+                  )),
             ),
             const SizedBox(width: TSizes.spaceBtwItems - 3),
             // Symptom Percentage Card
@@ -213,6 +271,18 @@ class _SymptomStatisticsCardsState extends State<SymptomStatisticsCards> {
                             color: TColors.darkGrey,
                           ),
                     ),
+                    if (widget.filter == 'Custom Date' &&
+                        widget.startDate != null &&
+                        widget.endDate != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '${DateFormat('MMM dd').format(widget.startDate!)} - ${DateFormat('MMM dd, yyyy').format(widget.endDate!)}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: TColors.darkGrey,
+                              fontSize: 12,
+                            ),
+                      ),
+                    ],
                     const SizedBox(height: TSizes.sm),
                     Text(
                       '${_getSymptomPercentage().toStringAsFixed(1)}%',

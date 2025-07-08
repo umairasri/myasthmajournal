@@ -7,6 +7,7 @@ import 'package:asthma_app/utils/constants/colors.dart';
 import 'package:asthma_app/utils/constants/sizes.dart';
 import 'package:asthma_app/utils/logger.dart';
 import 'package:intl/intl.dart';
+import 'package:asthma_app/features/asthma/models/medication_model.dart';
 
 enum TrendType { daily, weekly, monthly }
 
@@ -22,54 +23,81 @@ class _MedicationChartFilterState extends State<MedicationChartFilter> {
   final SelectedDependentController _selectedDependentController = Get.find();
   TrendType selectedTrend = TrendType.daily;
 
-  List<int> _getMedicationCounts() {
-    final now = DateTime.now();
-    final String currentUserId =
-        _selectedDependentController.getSelectionUserId();
+  Color _getColorForMedication(String name) {
+    final lowerCaseName = name.toLowerCase();
+    if (lowerCaseName.contains('inhaler')) return Colors.blue;
+    if (lowerCaseName.contains('nebulizer')) return Colors.green;
+    if (lowerCaseName.contains('syrup')) return Colors.orange;
+    return Colors.grey;
+  }
 
-    TLogger.debug(
-        'Getting medication counts for ${selectedTrend.toString()} for user/dependent: $currentUserId');
-
-    switch (selectedTrend) {
-      case TrendType.daily:
-        return List.generate(7, (i) {
-          final day = now.subtract(Duration(days: 6 - i));
-          final dateString = DateFormat('yyyy-MM-dd').format(day);
-          return _medicationController.medications
-              .where((m) => m.userId == currentUserId && m.date == dateString)
-              .fold<int>(0, (sum, m) => sum + m.medication.length);
-        });
-
-      case TrendType.weekly:
-        return List.generate(7, (i) {
-          final startOfWeek = now.subtract(Duration(days: (6 - i) * 7));
-          final endOfWeek = startOfWeek.add(const Duration(days: 6));
-          final startDateString = DateFormat('yyyy-MM-dd').format(startOfWeek);
-          final endDateString = DateFormat('yyyy-MM-dd').format(endOfWeek);
-          return _medicationController.medications
-              .where((m) =>
-                  m.userId == currentUserId &&
-                  m.date.compareTo(startDateString) >= 0 &&
-                  m.date.compareTo(endDateString) <= 0)
-              .fold<int>(0, (sum, m) => sum + m.medication.length);
-        });
-
-      case TrendType.monthly:
-        return List.generate(7, (i) {
-          final monthAgo = DateTime(now.year, now.month - (6 - i));
-          final firstDayOfMonth = DateTime(monthAgo.year, monthAgo.month, 1);
-          final lastDayOfMonth = DateTime(monthAgo.year, monthAgo.month + 1, 0);
-          final startDateString =
-              DateFormat('yyyy-MM-dd').format(firstDayOfMonth);
-          final endDateString = DateFormat('yyyy-MM-dd').format(lastDayOfMonth);
-          return _medicationController.medications
-              .where((m) =>
-                  m.userId == currentUserId &&
-                  m.date.compareTo(startDateString) >= 0 &&
-                  m.date.compareTo(endDateString) <= 0)
-              .fold<int>(0, (sum, m) => sum + m.medication.length);
-        });
+  Set<String> _getMedicationTypes() {
+    final currentUserId = _selectedDependentController.getSelectionUserId();
+    final types = <String>{};
+    for (final m in _medicationController.medications) {
+      if (m.userId == currentUserId) {
+        for (final med in m.medication) {
+          if (med.containsKey('name')) {
+            types.add(med['name']!);
+          }
+        }
+      }
     }
+    return types;
+  }
+
+  Map<String, List<int>> _getMedicationCountsByType() {
+    final now = DateTime.now();
+    final currentUserId = _selectedDependentController.getSelectionUserId();
+    final types = _getMedicationTypes();
+    final Map<String, List<int>> countsByType = {
+      for (var t in types) t: List.filled(7, 0)
+    };
+
+    for (final type in types) {
+      for (int i = 0; i < 7; i++) {
+        bool Function(MedicationModel m) dateMatch;
+        switch (selectedTrend) {
+          case TrendType.daily:
+            final day = now.subtract(Duration(days: 6 - i));
+            final dateString = DateFormat('yyyy-MM-dd').format(day);
+            dateMatch = (m) => m.date == dateString;
+            break;
+          case TrendType.weekly:
+            final startOfWeek = now.subtract(Duration(days: (6 - i) * 7));
+            final endOfWeek = startOfWeek.add(const Duration(days: 6));
+            final startDateString =
+                DateFormat('yyyy-MM-dd').format(startOfWeek);
+            final endDateString = DateFormat('yyyy-MM-dd').format(endOfWeek);
+            dateMatch = (m) =>
+                m.date.compareTo(startDateString) >= 0 &&
+                m.date.compareTo(endDateString) <= 0;
+            break;
+          case TrendType.monthly:
+            final monthAgo = DateTime(now.year, now.month - (6 - i));
+            final firstDayOfMonth = DateTime(monthAgo.year, monthAgo.month, 1);
+            final lastDayOfMonth =
+                DateTime(monthAgo.year, monthAgo.month + 1, 0);
+            final startDateString =
+                DateFormat('yyyy-MM-dd').format(firstDayOfMonth);
+            final endDateString =
+                DateFormat('yyyy-MM-dd').format(lastDayOfMonth);
+            dateMatch = (m) =>
+                m.date.compareTo(startDateString) >= 0 &&
+                m.date.compareTo(endDateString) <= 0;
+            break;
+        }
+        // Count medications of this type for this period
+        int count = 0;
+        for (final m in _medicationController.medications) {
+          if (m.userId == currentUserId && dateMatch(m)) {
+            count += m.medication.where((med) => med['name'] == type).length;
+          }
+        }
+        countsByType[type]![i] = count;
+      }
+    }
+    return countsByType;
   }
 
   List<String> _getLabels() {
@@ -80,7 +108,6 @@ class _MedicationChartFilterState extends State<MedicationChartFilter> {
           final day = now.subtract(Duration(days: 6 - i));
           return DateFormat('E').format(day);
         });
-
       case TrendType.weekly:
         return List.generate(7, (i) {
           final weekStart =
@@ -88,7 +115,6 @@ class _MedicationChartFilterState extends State<MedicationChartFilter> {
           final weekEnd = weekStart.add(const Duration(days: 6));
           return '${DateFormat('d MMM').format(weekStart)}\n${DateFormat('d MMM').format(weekEnd)}';
         });
-
       case TrendType.monthly:
         return List.generate(7, (i) {
           final monthDate = DateTime(now.year, now.month - (6 - i));
@@ -97,17 +123,15 @@ class _MedicationChartFilterState extends State<MedicationChartFilter> {
     }
   }
 
-  String _determineAdherenceLevel(List<int> counts) {
-    if (counts.isEmpty) return "No Data";
-
-    final average = counts.reduce((a, b) => a + b) / counts.length;
-    if (average <= 1)
-      return "Excellent"; // Taking 1 or fewer medications indicates excellent control
-    if (average <= 2)
-      return "Good"; // Taking 2 or fewer medications indicates good control
-    if (average <= 3)
-      return "Fair"; // Taking 3 or fewer medications indicates fair control
-    return "Poor"; // Taking more than 3 medications indicates poor control
+  String _determineAdherenceLevel(Map<String, List<int>> countsByType) {
+    // Sum all counts for all types
+    final allCounts = countsByType.values.expand((x) => x).toList();
+    if (allCounts.isEmpty) return "No Data";
+    final average = allCounts.reduce((a, b) => a + b) / allCounts.length;
+    if (average <= 1) return "Excellent";
+    if (average <= 2) return "Good";
+    if (average <= 3) return "Fair";
+    return "Poor";
   }
 
   bool isWeek() {
@@ -117,9 +141,10 @@ class _MedicationChartFilterState extends State<MedicationChartFilter> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final counts = _getMedicationCounts();
+      final countsByType = _getMedicationCountsByType();
+      final types = countsByType.keys.toList();
       final labels = _getLabels();
-      final adherence = _determineAdherenceLevel(counts);
+      final adherence = _determineAdherenceLevel(countsByType);
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,7 +228,7 @@ class _MedicationChartFilterState extends State<MedicationChartFilter> {
               children: [
                 Row(
                   children: [
-                    /// Chart Stroke Color
+                    /// Chart Stroke Color (use primary for adherence indicator)
                     Container(
                       width: 12,
                       height: 12,
@@ -231,19 +256,21 @@ class _MedicationChartFilterState extends State<MedicationChartFilter> {
                     padding: const EdgeInsets.symmetric(horizontal: 10.0),
                     child: LineChart(
                       LineChartData(
-                        lineBarsData: [
-                          LineChartBarData(
+                        lineBarsData: types.map((type) {
+                          final color = _getColorForMedication(type);
+                          final counts = countsByType[type]!;
+                          return LineChartBarData(
                             spots: List.generate(
                               counts.length,
                               (i) => FlSpot(i.toDouble(), counts[i].toDouble()),
                             ),
                             isCurved: false,
-                            color: TColors.primary,
-                            barWidth: 5,
+                            color: color,
+                            barWidth: 6,
                             isStrokeCapRound: true,
                             dotData: FlDotData(show: true),
-                          )
-                        ],
+                          );
+                        }).toList(),
                         titlesData: FlTitlesData(
                           bottomTitles: AxisTitles(
                             sideTitles: SideTitles(
@@ -314,7 +341,32 @@ class _MedicationChartFilterState extends State<MedicationChartFilter> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                )
+                ),
+                const SizedBox(height: 16),
+                // Legend
+                if (types.isNotEmpty)
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 16,
+                    children: types.map((type) {
+                      final color = _getColorForMedication(type);
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: color,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(type, style: const TextStyle(fontSize: 13)),
+                        ],
+                      );
+                    }).toList(),
+                  ),
               ],
             ),
           ),
