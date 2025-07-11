@@ -174,7 +174,7 @@ class SelectDependentDialog extends StatelessWidget {
                         ),
                         const SizedBox(width: TSizes.xs),
                         Text(
-                          '$age years old',
+                          age,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
@@ -207,8 +207,8 @@ class SelectDependentDialog extends StatelessWidget {
       if (dateOfBirth.contains('/')) {
         final parts = dateOfBirth.split('/');
         if (parts.length == 3) {
-          final day = int.parse(parts[0]);
-          final month = int.parse(parts[1]);
+          final month = int.parse(parts[0]);
+          final day = int.parse(parts[1]);
           final year = int.parse(parts[2]);
           dob = DateTime(year, month, day);
         } else {
@@ -218,13 +218,29 @@ class SelectDependentDialog extends StatelessWidget {
         dob = DateTime.parse(dateOfBirth);
       }
 
-      final now = DateTime.now();
-      int age = now.year - dob.year;
-      if (now.month < dob.month ||
-          (now.month == dob.month && now.day < dob.day)) {
-        age--;
+      final today = DateTime.now();
+      int years = today.year - dob.year;
+      int months = today.month - dob.month;
+      int days = today.day - dob.day;
+
+      if (days < 0) {
+        months--;
       }
-      return age.toString();
+      if (months < 0) {
+        years--;
+        months += 12;
+      }
+
+      if (years < 1) {
+        // If less than 1 year, show months old
+        // If less than 1 month, show 'Newborn'
+        if (months < 1) {
+          return 'Newborn';
+        }
+        return '$months month${months > 1 ? 's' : ''} old';
+      } else {
+        return '$years year${years > 1 ? 's' : ''} old';
+      }
     } catch (e) {
       return 'Unknown';
     }

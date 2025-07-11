@@ -86,6 +86,9 @@ class DependentController extends GetxController {
         return;
       }
 
+      // Sync evohaler value from text field
+      selectedEvohaler.value = evohaler.text.trim();
+
       // Get current user ID
       final userId = FirebaseAuth.instance.currentUser?.uid;
       if (userId == null) throw 'User not found';

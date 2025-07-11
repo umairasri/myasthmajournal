@@ -83,7 +83,7 @@ class ManageDependentScreen extends StatelessWidget {
                                             ),
                                           ),
                                           subtitle: Text(
-                                            '${dependent.relation} - $age years old',
+                                            '${dependent.relation} - $age',
                                             style:
                                                 const TextStyle(fontSize: 14),
                                           ),
@@ -167,10 +167,7 @@ class ManageDependentScreen extends StatelessWidget {
       // Print the date string for debugging
       print('Date of birth string: $dateOfBirth');
 
-      // Try to parse the date
       DateTime dob;
-
-      // Check if the date is in a different format
       if (dateOfBirth.contains('/')) {
         // Handle MM/DD/YYYY format
         final parts = dateOfBirth.split('/');
@@ -186,19 +183,32 @@ class ManageDependentScreen extends StatelessWidget {
         // Handle YYYY-MM-DD format
         dob = DateTime.parse(dateOfBirth);
       } else {
-        // Try to parse as is
         dob = DateTime.parse(dateOfBirth);
       }
 
       final today = DateTime.now();
-      int age = today.year - dob.year;
-      final monthDiff = today.month - dob.month;
+      int years = today.year - dob.year;
+      int months = today.month - dob.month;
+      int days = today.day - dob.day;
 
-      if (monthDiff < 0 || (monthDiff == 0 && today.day < dob.day)) {
-        age--;
+      if (days < 0) {
+        months--;
+      }
+      if (months < 0) {
+        years--;
+        months += 12;
       }
 
-      return age.toString();
+      if (years < 1) {
+        // If less than 1 year, show months old
+        // If less than 1 month, show 'Newborn'
+        if (months < 1) {
+          return 'Newborn';
+        }
+        return '$months month${months > 1 ? 's' : ''} old';
+      } else {
+        return '$years year${years > 1 ? 's' : ''} old';
+      }
     } catch (e) {
       print('Error calculating age: $e');
       return 'Unknown';
