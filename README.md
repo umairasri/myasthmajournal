@@ -15,7 +15,7 @@
 
 *Empowering patients and caregivers to take control of asthma through intelligent medication tracking, automated emergency warnings, interactive health analytics, and clinical provider integration.*
 
-[Explore Features](#-key-features) • [UI Showcase](#-ui-showcase) • [Tech Stack](#-tech-stack--architecture) • [Getting Started](#-getting-started) • [Portfolio Showcase](#-portfolio-showcase-snippet)
+[Explore Features](#-key-features) • [UI Showcase](#-ui-showcase) • [Tech Stack](#-tech-stack--architecture) • [Getting Started](#-getting-started)
 
 </div>
 
@@ -168,50 +168,6 @@ flutter pub get
 # Run on connected device or emulator
 flutter run
 ```
-
----
-
-## 💼 Portfolio Showcase Snippet
-
-If you are featuring **MyAsthmaJournal** on your personal developer portfolio website, here is a ready-to-use project description card:
-
-### Markdown / Text Summary
-```markdown
-### 🫁 MyAsthmaJournal — Flutter & Firebase Asthma Management App
-- **Overview**: A patient-caregiver asthma monitoring mobile app featuring automated high-medication safety alerts, fl_chart symptom analytics, dependent family management, and healthcare clinic verification.
-- **Tech Stack**: Flutter, Dart, GetX, Firebase (Auth, Firestore, Cloud Storage), Local Notifications, fl_chart.
-- **Key Highlight**: Built a smart threshold-detection algorithm that triggers high-priority clinical emergency alerts when rescue inhaler usage exceeds safe limits (>4 times/day).
-- **GitHub**: [github.com/umairasri/myasthmajournal](https://github.com/umairasri/myasthmajournal)
-```
-
-### HTML / React Card Component
-```html
-<div class="project-card">
-  <img src="screenshots/01_dashboard_and_alert.jpg" alt="MyAsthmaJournal" class="project-img" />
-  <div class="project-content">
-    <h3>MyAsthmaJournal</h3>
-    <p class="project-description">
-      Cross-platform Flutter mobile application designed for asthma tracking, caregiver-dependent management, and clinical collaboration. Features real-time emergency medication alerts and trend analytics.
-    </p>
-    <div class="project-tags">
-      <span class="tag">Flutter</span>
-      <span class="tag">Dart</span>
-      <span class="tag">Firebase</span>
-      <span class="tag">GetX</span>
-      <span class="tag">Healthcare</span>
-    </div>
-    <div class="project-links">
-      <a href="https://github.com/umairasri/myasthmajournal" target="_blank" rel="noopener noreferrer">View on GitHub</a>
-    </div>
-  </div>
-</div>
-```
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
 ---
 
